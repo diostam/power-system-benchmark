@@ -353,41 +353,51 @@ Julia **doesn't** help when:
 
 #### Benchmark Results Summary
 
-| Test | PowSyBl | PowerModels.jl | Speedup | Winner |
-|------|---------|----------------|---------|--------|
-| AC Power Flow | 464 ms | 4,402 ms | **9.5x** | **PowSyBl** |
-| DC Power Flow | 53 ms | 282 ms | **5.3x** | **PowSyBl** |
-| DC Contingency (500) | 1,660 ms | 122,229 ms | **73.6x** | **PowSyBl** |
-| PTDF Calculation | 47,525 ms (~47.5s) | 376,522 ms (~6.3 min) | **7.9x** | **PowSyBl** |
+| Test | PowSyBl | PowerModels.jl (Optimized) | Speedup | Winner |
+|------|---------|---------------------------|---------|--------|
+| AC Power Flow | 464 ms | 1,691 ms | **3.6x** | **PowSyBl** |
+| DC Power Flow | 53 ms | 294 ms | **5.5x** | **PowSyBl** |
+| DC Contingency (500) | 1,660 ms | 82,561 ms | **49.7x** | **PowSyBl** |
+| PTDF Calculation | 47,525 ms (~47.5s) | 346,250 ms (~5.8 min) | **7.3x** | **PowSyBl** |
 
-**Note on Julia Compilation Overhead:**
+**PowerModels.jl Optimizations Applied:**
 
-The PowerModels.jl benchmark times include first-run Julia compilation overhead (~1-2 seconds for simple tests, potentially more for complex operations). Even accounting for this:
+The PowerModels.jl benchmark has been optimized to ensure fair comparison and leverage Julia's performance advantages:
 
-- **With compilation removed** (warm Julia runtime): PowSyBl still shows **2-6x speedup**
-- **AC Power Flow:** ~2,163 ms (Julia warm) vs 495 ms (PowSyBl) = **4.4x faster**
-- **PTDF Contingency:** ~283 sec (Julia warm) vs 48 sec (PowSyBl) = **5.9x faster**
+1. ✅ **Eliminated deepcopy overhead**: Modified branch status in-place instead of copying entire network 500 times
+2. ✅ **Removed Julia compilation overhead**: Included warmup runs to pre-compile functions before timing
+3. ✅ **Minimized solver output**: Suppressed Ipopt verbose output for cleaner benchmarking
 
-This proves the performance difference stems from **algorithmic design, not language overhead**. Even with Julia's best-case performance (pre-compiled, warmed up), PowSyBl's batch processing and matrix factorization reuse provide substantial advantages.
+**Performance Improvements from Optimization:**
 
-**Memory Allocation Comparison:**
+| Test | Original PowerModels | Optimized PowerModels | Improvement |
+|------|---------------------|----------------------|-------------|
+| AC Power Flow | 4,402 ms | 1,691 ms | **2.6x faster** |
+| DC Power Flow | 282 ms | 294 ms | ~same |
+| DC Contingency (500) | 122,229 ms | 82,561 ms | **1.5x faster** |
+| PTDF Calculation | 376,522 ms | 346,250 ms | **1.1x faster** |
 
-PowerModels.jl's sequential approach causes massive memory overhead:
-- **415 million allocations** for 500 contingencies
-- **1.083 TiB** of memory allocated (due to `deepcopy` × 500)
-- **10.5% garbage collection time** overhead
+**Key Finding:**
 
-PowSyBl's batch processing avoids this entirely through in-place modifications and shared matrix factorizations.
+Even with **zero deepcopy overhead and warm Julia** (no compilation overhead), PowSyBl maintains a **3.6-50x performance advantage**. This definitively proves the performance gap stems from **algorithmic design, not language performance**:
+
+- **Eliminated ~1TB memory allocations** from deepcopy operations
+- **Removed Julia compilation overhead** from measurements
+- **Still 49.7x slower** on DC contingency analysis due to sequential vs. batch processing
+
+The fundamental bottleneck remains: **PowerModels solves 500 independent optimization problems** (reinitializing Ipopt each time), while **PowSyBl uses batch processing** with matrix factorization reuse.
 
 #### How to Make PowerModels.jl Competitive
 
-To improve PowerModels.jl performance:
+To improve PowerModels.jl performance beyond current optimizations:
 1. **Implement batch contingency analysis APIs** with shared matrix factorization
 2. **Use incremental matrix update techniques** instead of full recalculation
-3. **Avoid `deepcopy`** by using immutable views or efficient snapshots
+3. ✅ ~~**Avoid `deepcopy`**~~ - Already implemented via in-place branch status modification
 4. **Leverage PTDF matrix update formulas** (e.g., matrix inversion lemma)
 5. **Pre-factorize and reuse sparse matrices** across contingencies
-6. **Use specialized power flow solvers** instead of generic optimization
+6. **Use specialized power flow solvers** instead of generic optimization (bypass Ipopt for DC analysis)
+
+**Note:** Items marked ✅ have been implemented in this benchmark's optimized version.
 
 #### Conclusion
 
@@ -395,20 +405,20 @@ To improve PowerModels.jl performance:
 - **Algorithmic superiority:** Batch processing with matrix factorization reuse (not sequential execution)
 - **Domain-specific optimization:** Built for ISO/RTO operational workflows, not generic research
 - **Specialized solvers:** Newton-Raphson variants optimized for power systems vs. generic Ipopt
-- **Efficient memory patterns:** In-place modifications vs. 1+ TiB of allocations from `deepcopy`
+- **Efficient memory patterns:** In-place modifications without redundant copying
 - **Mature implementation:** Years of performance tuning for enterprise-scale operations
 
 **Key Insight:**
 
-Even when Julia has **zero compilation overhead** (pre-compiled, warmed up), PowSyBl remains **2-6x faster**. This definitively proves that:
+Even with **fully optimized Julia code** (zero deepcopy overhead, zero compilation overhead, warm runtime), PowSyBl remains **3.6-50x faster**. This definitively proves that:
 
 > **Algorithm and architecture trump raw language performance in real-world engineering applications.**
 
-The 5-75x performance advantage is not a language issue—it's a **fundamental difference in how the problem is solved**:
-- **Sequential** (PowerModels) vs. **Batch** (PowSyBl)
-- **Generic optimization** vs. **Specialized power flow**
-- **Full recalculation** vs. **Incremental updates**
-- **Memory-intensive copies** vs. **Efficient factorization reuse**
+The performance gap is not a language issue—it's a **fundamental difference in how the problem is solved**:
+- **Sequential** (PowerModels: 500 independent Ipopt calls) vs. **Batch** (PowSyBl: single analysis with incremental updates)
+- **Generic optimization** (Ipopt interior point) vs. **Specialized power flow** (Newton-Raphson)
+- **Full recalculation** vs. **Incremental matrix updates**
+- **No memory waste** (optimized Julia) vs. **Efficient factorization reuse** (PowSyBl still faster)
 
 ## Output Files
 
