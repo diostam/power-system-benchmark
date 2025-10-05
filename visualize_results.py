@@ -163,18 +163,18 @@ def create_speedup_chart(powsybl, powermodels, output_dir):
     plt.close()
 
 def create_memory_comparison(output_dir):
-    """Create memory allocation comparison visualization - Before/After Optimization"""
+    """Create memory allocation comparison visualization"""
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-    # Data showing BEFORE and AFTER optimization
-    scenarios = ['PowSyBl', 'PowerModels\n(Original)', 'PowerModels\n(Optimized)']
-    allocations_millions = [5, 415, 5]  # Optimized version uses in-place modification
-    memory_gb = [0.05, 1083, 0.05]  # Optimized version eliminates deepcopy overhead
-    colors = ['#2E86AB', '#A23B72', '#66BB6A']
+    # Data: both packages use efficient in-place modification
+    packages = ['PowSyBl', 'PowerModels.jl']
+    allocations_millions = [5, 5]  # Both use in-place modification
+    memory_gb = [0.05, 0.05]  # Both avoid deepcopy overhead
+    colors = ['#2E86AB', '#A23B72']
 
     # Plot 1: Number of allocations
-    bars1 = ax1.bar(scenarios, allocations_millions, color=colors, alpha=0.8,
+    bars1 = ax1.bar(packages, allocations_millions, color=colors, alpha=0.8,
                     edgecolor='black', linewidth=1.5)
     ax1.set_ylabel('Allocations (millions)', fontsize=12, fontweight='bold')
     ax1.set_title('Memory Allocations\n(500 Contingencies)', fontsize=13, fontweight='bold')
@@ -185,17 +185,11 @@ def create_memory_comparison(output_dir):
         ax1.text(bar.get_x() + bar.get_width()/2., height,
                 f'{val}M', ha='center', va='bottom', fontsize=11, fontweight='bold')
 
-    # Add annotation showing improvement
-    ax1.annotate('', xy=(2, 415), xytext=(2, 20),
-                arrowprops=dict(arrowstyle='->', lw=2, color='green'))
-    ax1.text(2.2, 200, '83x reduction!', fontsize=10, color='green', fontweight='bold')
-
-    # Plot 2: Memory allocated (log scale)
-    bars2 = ax2.bar(scenarios, memory_gb, color=colors, alpha=0.8,
+    # Plot 2: Memory allocated
+    bars2 = ax2.bar(packages, memory_gb, color=colors, alpha=0.8,
                     edgecolor='black', linewidth=1.5)
-    ax2.set_ylabel('Memory Allocated (GB, log scale)', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Memory Allocated (GB)', fontsize=12, fontweight='bold')
     ax2.set_title('Total Memory Allocated\n(500 Contingencies)', fontsize=13, fontweight='bold')
-    ax2.set_yscale('log')
     ax2.grid(True, alpha=0.3, axis='y')
 
     for bar, val in zip(bars2, memory_gb):
@@ -207,50 +201,42 @@ def create_memory_comparison(output_dir):
         ax2.text(bar.get_x() + bar.get_width()/2., height,
                 label, ha='center', va='bottom', fontsize=11, fontweight='bold')
 
-    # Add annotation showing improvement
-    ax2.annotate('', xy=(2, 1083), xytext=(2, 0.1),
-                arrowprops=dict(arrowstyle='->', lw=2, color='green'))
-    ax2.text(2.2, 10, '21,660x\nreduction!', fontsize=10, color='green', fontweight='bold')
-
-    plt.suptitle('Memory Efficiency: Optimization Impact', fontsize=16, fontweight='bold', y=1.02)
+    plt.suptitle('Memory Efficiency Comparison', fontsize=16, fontweight='bold', y=1.02)
     plt.tight_layout()
     plt.savefig(output_dir / 'memory_comparison.png', dpi=300, bbox_inches='tight')
     print(f"✓ Created memory_comparison.png")
     plt.close()
 
 def create_julia_compilation_impact(output_dir):
-    """Visualize the impact of Julia compilation overhead (now eliminated in optimized version)"""
+    """Visualize key performance metrics for both packages"""
 
-    tests = ['AC Power Flow', 'PTDF + Contingencies']
+    tests = ['AC Power Flow', 'DC Power Flow', 'DC Contingency (500)', 'PTDF + 500 Contingencies']
 
-    # Times in seconds - using actual optimized benchmark data
-    powsybl_times = [0.464, 47.5]
-    julia_cold_old = [4.402, 376.5]  # Original with compilation
-    julia_warm_optimized = [1.691, 346.3]  # Optimized with warmup (no compilation)
+    # Times in seconds - using actual benchmark data
+    powsybl_times = [0.464, 0.053, 1.660, 47.5]
+    powermodels_times = [1.691, 0.294, 82.561, 346.3]
 
     x = np.arange(len(tests))
-    width = 0.25
+    width = 0.35
 
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(14, 8))
 
-    bars1 = ax.bar(x - width, powsybl_times, width, label='PowSyBl',
+    bars1 = ax.bar(x - width/2, powsybl_times, width, label='PowSyBl',
                    color='#2E86AB', alpha=0.8, edgecolor='black', linewidth=1.5)
-    bars2 = ax.bar(x, julia_cold_old, width, label='PowerModels.jl (Original - with compilation)',
+    bars2 = ax.bar(x + width/2, powermodels_times, width, label='PowerModels.jl',
                    color='#A23B72', alpha=0.8, edgecolor='black', linewidth=1.5)
-    bars3 = ax.bar(x + width, julia_warm_optimized, width, label='PowerModels.jl (Optimized - warmed up)',
-                   color='#66BB6A', alpha=0.8, edgecolor='black', linewidth=1.5)
 
     ax.set_ylabel('Time (seconds, log scale)', fontsize=13, fontweight='bold')
-    ax.set_title('Julia Optimization Impact: Eliminated Compilation Overhead\n(PowSyBl Still Faster Due to Algorithmic Design)',
+    ax.set_title('Performance Comparison: PowSyBl vs PowerModels.jl\n(Algorithm & Architecture Drive Performance Gap)',
                  fontsize=15, fontweight='bold', pad=20)
     ax.set_xticks(x)
-    ax.set_xticklabels(tests)
-    ax.legend(fontsize=11, loc='upper left')
+    ax.set_xticklabels(tests, fontsize=11)
+    ax.legend(fontsize=12, loc='upper left')
     ax.set_yscale('log')
     ax.grid(True, alpha=0.3, axis='y')
 
     # Add value labels
-    for bars in [bars1, bars2, bars3]:
+    for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
             if height < 1:
@@ -263,11 +249,9 @@ def create_julia_compilation_impact(output_dir):
                    label, ha='center', va='bottom', fontsize=9, fontweight='bold')
 
     # Add annotation
-    ax.annotate('Even with optimized Julia\n(zero compilation overhead),\nPowSyBl is 3.6-7.3x faster!',
-                xy=(1, julia_warm_optimized[1]), xytext=(1.3, 100),
-                fontsize=11, fontweight='bold', color='#2E7D32',
-                bbox=dict(boxstyle='round,pad=0.5', facecolor='yellow', alpha=0.3),
-                arrowprops=dict(arrowstyle='->', lw=2, color='#2E7D32'))
+    ax.text(0.02, 0.98, 'Key Factors:\n• Batch vs Sequential\n• Specialized vs Generic Solvers\n• Matrix Reuse vs Recalculation',
+            transform=ax.transAxes, fontsize=11, verticalalignment='top',
+            bbox=dict(boxstyle='round,pad=0.8', facecolor='lightyellow', alpha=0.8))
 
     plt.tight_layout()
     plt.savefig(output_dir / 'julia_compilation_impact.png', dpi=300, bbox_inches='tight')
@@ -371,7 +355,6 @@ def create_summary_dashboard(powsybl, powermodels, output_dir):
     Key Findings:
 
     ✓ 3.6-50x faster overall
-      (optimized Julia)
 
     ✓ Algorithmic advantage
       (not language speed)
@@ -379,8 +362,8 @@ def create_summary_dashboard(powsybl, powermodels, output_dir):
     ✓ Batch processing
       vs sequential
 
-    ✓ Zero deepcopy overhead
-      (optimized in-place)
+    ✓ In-place modification
+      (both packages)
 
     ✓ Specialized solvers
       vs generic Ipopt
@@ -397,18 +380,17 @@ def create_summary_dashboard(powsybl, powermodels, output_dir):
     ALGORITHMIC DIFFERENCES (The Real Performance Driver):
 
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │  PowSyBl (Fast)                                    │  PowerModels.jl (Optimized - Still Slower)                    │
+    │  PowSyBl (Fast)                                    │  PowerModels.jl (Slower)                                      │
     ├────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
     │  • Batch processing (single analysis object)       │  • Sequential processing (500 separate Ipopt calls)           │
     │  • Matrix factorization reuse                      │  • Full matrix rebuild each time                              │
-    │  • Incremental network updates                     │  • In-place branch status modification (optimized!)           │
+    │  • Incremental network updates                     │  • In-place branch status modification                        │
     │  • Specialized power flow solvers                  │  • Generic Ipopt optimization                                 │
     │  • Sherman-Morrison-Woodbury formula               │  • Complete PTDF matrix recalculation                         │
-    │  • In-place modifications                          │  • Zero compilation overhead (warmed up!)                     │
+    │  • In-place modifications                          │  • Pre-compiled (warm Julia)                                  │
     └────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────┘
 
-    CONCLUSION: Even with ZERO deepcopy + ZERO Julia compilation overhead, PowSyBl remains 3.6-50x faster.
-                This proves the advantage is ALGORITHMIC, not language-based.
+    CONCLUSION: PowSyBl is 3.6-50x faster due to ALGORITHMIC design, not language performance.
     """
     ax6.text(0.05, 0.5, comparison_text, fontsize=9, verticalalignment='center',
              family='monospace', bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.5))

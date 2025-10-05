@@ -1,14 +1,13 @@
 #!/usr/bin/env julia
 
 """
-PowerModels.jl Comprehensive Benchmark (Optimized)
+PowerModels.jl Comprehensive Benchmark
 
 Benchmarks PowerModels.jl performance across AC/DC power flow, contingency analysis, and PTDF calculations.
-Optimizations:
-- Eliminates deepcopy overhead by modifying branch status in-place
-- Pre-computes basic network transformation once
-- Uses silent Ipopt optimizer
-- Includes warmup run to exclude Julia compilation overhead
+Implementation details:
+- In-place branch status modification (no deepcopy overhead)
+- Warmup runs to pre-compile functions (no compilation overhead in timings)
+- Silent Ipopt optimizer
 
 See README.md for detailed test descriptions and configuration.
 """
@@ -43,7 +42,7 @@ function time_operation(func, description)
 end
 
 function run_ptdf_analysis(data, contingency_branches, monitored_branches, injection_points)
-    """Run PTDF analysis for base case and all contingencies (OPTIMIZED - no deepcopy)"""
+    """Run PTDF analysis for base case and all contingencies"""
 
     # Base case PTDF
     base_matrix = PowerModels.calc_basic_ptdf_matrix(PowerModels.make_basic_network(data))
@@ -74,10 +73,9 @@ end
 
 function main()
     println("=" ^ 60)
-    println(" POWERMODELS.JL COMPREHENSIVE BENCHMARK (OPTIMIZED)")
+    println(" POWERMODELS.JL COMPREHENSIVE BENCHMARK")
     println("=" ^ 60)
     println("Testing: AC/DC Power Flow, DC Contingency Analysis, PTDF")
-    println("Optimizations: No deepcopy, silent Ipopt, warmup precompilation")
 
     # Load network
     println("\nLoading network...")
@@ -176,7 +174,7 @@ function main()
     end, "2. DC Power Flow")
     results["timing_ms"]["dc_power_flow"] = success ? elapsed : nothing
 
-    # Test 3: DC N-1 Contingency Analysis (OPTIMIZED - no deepcopy)
+    # Test 3: DC N-1 Contingency Analysis
     elapsed, success, successful_contingencies = time_operation(() -> begin
         successful = 0
         for (i, branch_id) in enumerate(contingency_branches)
@@ -203,17 +201,17 @@ function main()
             end
         end
         successful
-    end, "3. DC N-1 Contingency Analysis ($(length(contingency_branches)) contingencies) [OPTIMIZED]")
+    end, "3. DC N-1 Contingency Analysis ($(length(contingency_branches)) contingencies)")
 
     results["timing_ms"]["dc_contingency_analysis"] = success ? elapsed : nothing
     if success
         results["success_rates"]["dc_contingency"] = "$successful_contingencies/$(length(contingency_branches))"
     end
 
-    # Test 4: PTDF Matrix Calculation (OPTIMIZED - no deepcopy)
+    # Test 4: PTDF Matrix Calculation
     elapsed, success, _ = time_operation(
         () -> run_ptdf_analysis(data, contingency_branches, monitored_branches, injection_points),
-        "4. PTDF Matrix Calculation (base + $(length(contingency_branches)) contingencies) [OPTIMIZED]"
+        "4. PTDF Matrix Calculation (base + $(length(contingency_branches)) contingencies)"
     )
 
     results["timing_ms"]["ptdf_calculation"] = success ? elapsed : nothing
