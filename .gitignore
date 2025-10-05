@@ -23,10 +23,13 @@ Manifest.toml
 *.swo
 *~
 
-# Results
+# Results (exclude JSON results but keep visualizations)
 *_results.json
 benchmark_comparison_*.json
 *.csv
+
+# Keep visualizations
+!visualizations/*.png
 
 # Jupyter
 .ipynb_checkpoints/

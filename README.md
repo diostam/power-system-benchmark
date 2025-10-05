@@ -153,6 +153,26 @@ This script will:
 
 **Timeout:** 30 minutes per benchmark (configurable in script)
 
+### Visualize Results
+
+Generate comprehensive visualizations of the benchmark results:
+```bash
+python3 visualize_results.py
+```
+
+**Generated Visualizations:**
+- `visualizations/timing_comparison.png` - Side-by-side execution time comparison (log scale)
+- `visualizations/speedup_comparison.png` - PowSyBl speedup factors for each test
+- `visualizations/memory_comparison.png` - Memory allocation overhead comparison
+- `visualizations/julia_compilation_impact.png` - Analysis of compilation overhead
+- `visualizations/summary_dashboard.png` - Comprehensive performance overview
+
+![Timing Comparison](visualizations/timing_comparison.png)
+*Figure 1: Execution time comparison showing PowSyBl's 5-75x performance advantage*
+
+![Speedup Factors](visualizations/speedup_comparison.png)
+*Figure 2: PowSyBl speedup ratios across all four test types*
+
 ### Individual Benchmarks
 
 #### PowSyBl Benchmark
