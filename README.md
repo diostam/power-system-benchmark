@@ -355,10 +355,10 @@ Julia **doesn't** help when:
 
 | Test | PowSyBl | PowerModels.jl | Speedup | Winner |
 |------|---------|----------------|---------|--------|
-| AC Power Flow | 495 ms | 4,459 ms | **9.0x** | **PowSyBl** |
-| DC Power Flow | 53 ms | 285 ms | **5.4x** | **PowSyBl** |
-| DC Contingency (500) | 1,692 ms | 127,537 ms | **75.4x** | **PowSyBl** |
-| PTDF Calculation | 47,776 ms (~48s) | 386,032 ms (~6.4 min) | **8.1x** | **PowSyBl** |
+| AC Power Flow | 464 ms | 4,402 ms | **9.5x** | **PowSyBl** |
+| DC Power Flow | 53 ms | 282 ms | **5.3x** | **PowSyBl** |
+| DC Contingency (500) | 1,660 ms | 122,229 ms | **73.6x** | **PowSyBl** |
+| PTDF Calculation | 47,525 ms (~47.5s) | 376,522 ms (~6.3 min) | **7.9x** | **PowSyBl** |
 
 **Note on Julia Compilation Overhead:**
 
