@@ -1,0 +1,16 @@
+# Core notebook dependencies
+jupyter
+notebook
+ipykernel
+
+# Power system analysis packages
+pypowsybl
+pandas
+numpy
+
+# Visualization (optional but useful for notebooks)
+matplotlib
+seaborn
+
+# Additional utilities
+pathlib
