@@ -73,24 +73,22 @@ def main():
     print(f"                {len(generators)} generators, {len(loads)} loads")
 
     # Define test configuration (same as PowerModels.jl)
-    num_contingencies = 500
-    num_monitored = 1000
-    num_injections = 500  # 250 gens + 250 loads
+    num_contingencies = 20
 
     # Get deterministic, sorted sets for consistency
     all_branch_ids = sorted(branches.index.tolist())
     contingency_branches = all_branch_ids[:num_contingencies]
-    monitored_branches = all_branch_ids[:num_monitored]
+    monitored_branches = all_branch_ids
 
     # Injection points: generators + loads
     all_gen_ids = sorted(generators.index.tolist())
     all_load_ids = sorted(loads.index.tolist())
-    injection_points = all_gen_ids[:250] + all_load_ids[:250]
+    injection_points = all_gen_ids + all_load_ids
 
     print(f"\nBenchmark Configuration:")
     print(f"  Contingencies: {len(contingency_branches)}")
     print(f"  Monitored branches: {len(monitored_branches)}")
-    print(f"  Injection points: {len(injection_points)} ({len(all_gen_ids[:250])} gens + {len(all_load_ids[:250])} loads)")
+    print(f"  Injection points: {len(injection_points)} ({len(all_gen_ids)} gens + {len(all_load_ids)} loads)")
 
     # Initialize results
     results = {

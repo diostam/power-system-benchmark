@@ -41,7 +41,7 @@ function time_operation(func, description)
     end
 end
 
-function run_ptdf_analysis(data, contingency_branches, monitored_branches, injection_points)
+function run_ptdf_analysis(data, contingency_branches)
     """Run PTDF analysis for base case and all contingencies"""
 
     # Base case PTDF
@@ -96,27 +96,20 @@ function main()
     println("                $generators generators, $loads loads")
 
     # Define test configuration (same as PowSyBl)
-    num_contingencies = 500
-    num_monitored = 1000
-    num_injections = 500  # 250 gens + 250 loads
+    num_contingencies = 20
 
     # Get deterministic, sorted sets for consistency
     all_branch_ids = sort(collect(keys(data["branch"])))
     contingency_branches = all_branch_ids[1:min(num_contingencies, length(all_branch_ids))]
-    monitored_branches = all_branch_ids[1:min(num_monitored, length(all_branch_ids))]
+    monitored_branches = all_branch_ids
 
     # Injection points: generators + loads (using Julia native IDs)
-    all_gen_ids = sort(collect(keys(data["gen"])))
-    all_load_ids = sort(collect(keys(data["load"])))
-    injection_points = vcat(
-        all_gen_ids[1:min(250, length(all_gen_ids))],
-        all_load_ids[1:min(250, length(all_load_ids))]
-    )
+    injection_points = collect(keys(data["bus"]))
 
     println("\nBenchmark Configuration:")
     println("  Contingencies: $(length(contingency_branches))")
     println("  Monitored branches: $(length(monitored_branches))")
-    println("  Injection points: $(length(injection_points)) ($(min(250, length(all_gen_ids))) gens + $(min(250, length(all_load_ids))) loads)")
+    println("  Injection points: $(length(injection_points))")
 
     # Initialize results
     results = Dict(
@@ -210,7 +203,7 @@ function main()
 
     # Test 4: PTDF Matrix Calculation
     elapsed, success, _ = time_operation(
-        () -> run_ptdf_analysis(data, contingency_branches, monitored_branches, injection_points),
+        () -> run_ptdf_analysis(data, contingency_branches),
         "4. PTDF Matrix Calculation (base + $(length(contingency_branches)) contingencies)"
     )
 
